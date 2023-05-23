@@ -1,34 +1,26 @@
 import numpy as np
 
-dd = dir('*.mat')
-t1 = 1
-t2 = np.numel(dd)
+data = np.array([
+        [1, 2, 3, 4, 5],
+        [5, 6, 7, 8, 10],
+        [5, 6, 7, 8, 10],
+        [5, 6, 7, 8, 10],
+        [5, 6, 7, 8, 10],
+        ])
 
-for k in (t1, t2):
-        #load(['R' num2str(k) '.mat']);    # edit input name accordingly
-        if (k==1):
-            D1 = D[:,1:end-1]
-            D2 = D[:,2:end]
-        else:
-            D1 = (D1, D[:,1:end-1])
-            D2 = (D2, D[:,2:end])
+data_shape = data.shape
+percent_Trunc = 0.03
+TruncVal = data_shape[0]*percent_Trunc
 
-# numofruns = t2
-# %% use this section in case of single runs
-# % clear all
-# % load data
-# % load coordinates
-# % numofruns = 1;
-# %%
-# if isa(x1,'cell')       # to convert any cell type to double
-#     x1 = float(x1)
-#     y1 = float(y1)
-# end
+#%% Compression matrix generation
 
-Frate = 2400   # Frame rate  (data acquisition)
-TruncVal = 3000     # truncation value
+C_gaussian = np.random.normal(0, 1, data_shape)
 
-# DMD algorithm
+#%% Compress data
+
+data = np.dot(C_gaussian, data)
+
+# %% DMD
 
 [U, S, V] = np.linalg.svd(data, full_matrices=True, compute_uv=True, hermitian=False)
 U = U[:, 1:TruncVal]
@@ -42,15 +34,27 @@ d = X1/D1[:,1]  # scales
 amplitude = np.absolute(d)
 X=X1*np.diag(d)    #scaled mode
 
-# end of DMD algorithm
+# end of DMD
 
+# %%
 modeNorm = np.zeros(1,TruncVal)
 for i in (1, TruncVal):
     modeNorm[i] = np.linalg.norm(X[:,i]) # norm of each mode
 
 mag = np.absolute(eivarray)
-weigh = mag[1:end]/np.sum(mag)
-delta_t = 1/Frate
+weigh = mag[1:-1]/np.sum(mag)
+delta_t = 1/frame_rate   
 omega = np.log(eivarray)/delta_t
 growth = np.real(omega)
 frequency = np.imag(omega)/(2*np.pi)
+
+# %%
+freq1 = np.where(frequency>=0)     # eliminating negative frequencies
+amplitude1 = amplitude[freq1]  # eliminating amplitudes corresponding to -ve frequencies
+d1 = d[freq1]    # similar operations below for different parameters
+omega1 = omega[freq1]
+growth1 = growth[freq1]
+weigh1 = weigh[freq1]
+modeNorm1 = modeNorm[:,freq1]
+frequency1 = frequency[freq1]
+Xplus = X[:,freq1]
